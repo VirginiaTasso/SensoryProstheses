@@ -1,7 +1,10 @@
 %% Read the mp3 file
+% Ask the user the desired file to process:
+% input = speech -> process Sam_excerpt.wav
+% input = music -> process time.mp3
 choice = input('Do you want to process "speech" or "music"? ', 's');
 
-% Load the corresponding file based on user input
+% Load file
 if strcmpi(choice, 'music')
     filename = 'time.mp3'; 
     disp("Processing music signal");
@@ -13,7 +16,8 @@ else
 end
 [audio_sgn, fs] = audioread(filename); % this is a stereo audio -> 2 channels
 audio_sgn = audio_sgn(:, 1); % select one channel
-%% if audio signal select just 20 seconds
+%% if music signal select just 20 seconds
+% the music file is long so just  a portion of it is selected
 if strcmp(filename, 'time.mp3')
  % The audio is long, just select 10 seconds, from min 2:14
 start_time = 134; %desired starting second
@@ -45,6 +49,7 @@ any(isnan(audio_sgn))
 any(isinf(audio_sgn)) 
 
 %% ========= Compute Spectrum ========= %%
+% check frequency content of the signal
 spect = fft(sgn);
 f = (0:length(spect)-1)*fs/length(spect);
 % Plot Spectrum
@@ -64,7 +69,7 @@ filt_sgn = {}; % initialize cell array to store the filtered signal
 
 for i=1:length(f_bands)
     f_band = f_bands(i,:) ./ f_nyq;
-    [b, a] = butter(4, f_band, "bandpass");
+    [b, a] = butter(4, f_band, "bandpass"); % butterworth filter
     filt_sgn{i} = filtfilt(b, a, sgn);
 end
 
@@ -81,7 +86,8 @@ end
 sgtitle('Filtered Signal Divided into Different Frequency Bands', 'FontSize', 18);
 
 %% ========= Envelope Extraction ========= %%
-% rectification of the filtered signal -> extraction of the abosulut value
+% rectification of the filtered signal 
+% extraction of the abosulute value + low pass filtering
 rectified = {}; % initialization of the cell array to store the rectified signal
 for i=1:length(filt_sgn)
     rectified{i} = abs(filt_sgn{i});
@@ -123,12 +129,14 @@ for i=1:length(f_bands)
     title(['Frequency Band ', num2str(f_bands(i, 1)), '-', num2str(f_bands(i, 2))])
 
     xlabel('Time [s]', 'FontSize',18);
-    ylabel('Amplitude (dB)', 'FontSize',18);
+    ylabel('Amplitude', 'FontSize',18);
     grid on
 end
 sgtitle('Compressed Signals', 'FontSize', 18)
 
 %% ========= Biphasic pulses ========= %%
+% generation of trains of biphasic pulses to modulate the signal
+% definition of the parameter of pulse trains
 pulse_rate = 800; % pps
 time_btw_pulses = 1 / pulse_rate;
 samples_btw_pulses = round(time_btw_pulses * fs);
@@ -136,6 +144,8 @@ modulated_signals = cell(length(f_bands), 1); % initialize cell array to store p
 
 for i = 1:length(f_bands)
     curr_sgn = compressed_sgn{i};
+    % initialization of a auxiliary variable to alternate positive and
+    % negative pulses
     count = 1;
     modulated_signals{i} = zeros(size(curr_sgn));
     for j=1:samples_btw_pulses:length(curr_sgn)
@@ -148,9 +158,9 @@ for i = 1:length(f_bands)
     end
 end
 %Combine Pulse Trains to Recreate Audio this is what our goal is 
-final_pulses = zeros(size(sgn));  %(Initialize the final pulse signal)
+final_pulses = zeros(size(sgn));  % Initialize the final pulse signal
 for i = 1:length(f_bands)
-    final_pulses = final_pulses + modulated_signals{i}; % ( Sum the pulse trains from all bands)
+    final_pulses = final_pulses + modulated_signals{i}; % Sum the pulse trains from all bands
 end
 
 %% Plot Biphasic Signals for Each Band
@@ -221,39 +231,7 @@ for i = 1:length(f_bands)
     grid on;
 end
 
-% Plot spectrum of the final combined signal
-spectrum_combined = abs(fft(final_pulses));
-subplot(length(f_bands)+1, 1, length(f_bands)+1);
-plot(frequencies, spectrum_combined, 'LineWidth', 1.5);
-xlim([0, max(f_bands(:))*1.5]); % Limit to the relevant frequency range
-title('Spectrum of Reconstructed Signal');
-xlabel('Frequency [Hz]');
-ylabel('Amplitude');
-grid on;
 
-figure;
-
-% Plot overlapped spectra
-for i = 1:length(f_bands)
-    hold on;
-    spectrum = abs(fft(modulated_signals{i}));
-    plot(frequencies, spectrum, 'color', colors(i)); % Plot the spectrum for each band
-end
-xlim([0, max(f_bands(:))*1.5]); % Limit to the relevant frequency range
-title('Overlapped Spectra','FontSize',18);
-xlabel('Frequency [Hz]', 'FontSize',18);
-ylabel('Amplitude', 'FontSize',18);
-legend(arrayfun(@(b) ['Band ' num2str(b) ' (' num2str(f_bands(b,1)) '-' num2str(f_bands(b,2)) ' Hz)'], 1:length(f_bands), 'UniformOutput', false));
-grid on;
-
-% Plot spectrum of the final combined signal
-figure;
-plot(frequencies, spectrum_combined);
-xlim([0, max(f_bands(:))*1.5]); % Limit to the relevant frequency range
-title('Spectrum of Reconstructed Signal', 'FontSize',18);
-xlabel('Frequency [Hz]', 'FontSize',18);
-ylabel('Amplitude', 'FontSize',18);
-grid on;
 
 %% Save signal
 
