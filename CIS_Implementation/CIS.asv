@@ -1,7 +1,7 @@
 %% Read the mp3 file
 choice = input('Do you want to process "speech" or "music"? ', 's');
 
-% Load file
+% Load the corresponding file based on user input
 if strcmpi(choice, 'music')
     filename = 'time.mp3'; 
     disp("Processing music signal");
