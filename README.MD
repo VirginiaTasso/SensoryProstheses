@@ -1,6 +1,6 @@
 ## SENSORY PROSTHESES PROJECTS 
 
-A collection of the assignments and projects from the Sensory Prostheses UIC course
+A collection of the assignments and projects from the Sensory Prosthesis UIC course
 
 ## Continuous Interleaved Sampling Project
 
