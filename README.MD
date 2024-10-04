@@ -1,4 +1,4 @@
-## SENSORY PROSTHESES PROJECTS 
+# SENSORY PROSTHESIS PROJECTS 
 
 A collection of the assignments and projects from the Sensory Prosthesis UIC course
 
